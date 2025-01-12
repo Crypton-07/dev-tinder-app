@@ -2,17 +2,47 @@ const express = require("express");
 const app = express();
 const connectDB = require("./config/database");
 const User = require("./models/userSchema");
+const validateSignup = require("./utils/validate.js");
+const bcrypt = require("bcrypt");
+const validator = require("validator");
 
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
-  // console.log(req.body);
-  const userData = new User(req.body);
   try {
+    // Validate the request body
+    validateSignup(req);
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      gender,
+      skills,
+      about,
+      photoUrl,
+      age,
+    } = req.body;
+
+    // Encrypt the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Save the user data
+    const userData = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      age,
+      about,
+      skills,
+      gender,
+      photoUrl,
+    });
     await userData.save();
     res.status(201).send("User data saved successfully");
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).send("ERROR : " + error.message);
   }
 });
 
@@ -85,6 +115,29 @@ app.patch("/user", async (req, res) => {
       runValidators: true,
     });
     res.status(200).send("User data updated successfully");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+//Login
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!validator.isEmail(email)) {
+      throw new Error("Email is invalid");
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const isPasswordMatched = await bcrypt.compare(password, user.password);
+    if (isPasswordMatched) {
+      res.status(200).send("Login successful");
+    } else {
+      res.status(400).send("Invalid password");
+    }
   } catch (error) {
     res.status(500).send(error.message);
   }

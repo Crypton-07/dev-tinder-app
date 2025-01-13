@@ -5,8 +5,12 @@ const User = require("./models/userSchema");
 const validateSignup = require("./utils/validate.js");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middlewares/userAuth");
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.post("/signup", async (req, res) => {
   try {
@@ -43,6 +47,31 @@ app.post("/signup", async (req, res) => {
     res.status(201).send("User data saved successfully");
   } catch (error) {
     res.status(400).send("ERROR : " + error.message);
+  }
+});
+
+//Login
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!validator.isEmail(email)) {
+      throw new Error("Invalid credentials");
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const isPasswordMatched = await bcrypt.compare(password, user.password);
+    if (isPasswordMatched) {
+      const token = await jwt.sign({ id: user._id }, "DevTinder@1107",{expiresIn: "1h"});
+      res.cookie("token", token);
+      res.status(200).send("Login successful");
+    } else {
+      res.status(400).send("Invalid credentials");
+    }
+  } catch (error) {
+    res.status(500).send(error.message);
   }
 });
 
@@ -120,24 +149,11 @@ app.patch("/user", async (req, res) => {
   }
 });
 
-//Login
-
-app.post("/login", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!validator.isEmail(email)) {
-      throw new Error("Email is invalid");
-    }
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw new Error("User not found");
-    }
-    const isPasswordMatched = await bcrypt.compare(password, user.password);
-    if (isPasswordMatched) {
-      res.status(200).send("Login successful");
-    } else {
-      res.status(400).send("Invalid password");
-    }
+    const userData = req.user.toObject();
+    delete userData.password;
+    res.status(200).send(userData);
   } catch (error) {
     res.status(500).send(error.message);
   }

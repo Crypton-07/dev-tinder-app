@@ -62,9 +62,9 @@ app.post("/login", async (req, res) => {
     if (!user) {
       throw new Error("User not found");
     }
-    const isPasswordMatched = await bcrypt.compare(password, user.password);
+    const isPasswordMatched = await user.validatePassword(password);
     if (isPasswordMatched) {
-      const token = await jwt.sign({ id: user._id }, "DevTinder@1107",{expiresIn: "1h"});
+      const token = await user.getJwtToken();
       res.cookie("token", token);
       res.status(200).send("Login successful");
     } else {
@@ -77,8 +77,6 @@ app.post("/login", async (req, res) => {
 
 app.get("/user", async (req, res) => {
   const user = await User.find({ email: req.body.email });
-  // console.log({ user });
-
   try {
     if (user) {
       res.status(200).send(user);

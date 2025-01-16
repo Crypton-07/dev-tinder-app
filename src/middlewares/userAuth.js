@@ -3,12 +3,21 @@ const User = require("../models/userSchema");
 const userAuth = async (req, res, next) => {
   try {
     const { token } = req.cookies;
-    console.log({ token });
     const userFromToken = jwt.verify(token, "DevTinder@1107");
     if (!userFromToken) {
       throw new Error("Invalid token");
     }
-    const getUser = await User.findById(userFromToken.id);
+    const getUser = await User.findById(userFromToken.id, {
+      email,
+      about,
+      age,
+      skills,
+      firstName,
+      lastName,
+      gender,
+      photoUrl,
+      createdAt,
+    });
     if (!getUser) {
       throw new Error("User not found");
     }

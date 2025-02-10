@@ -14,4 +14,18 @@ const validateSignup = (req) => {
     throw new Error("Age must be 18 or above");
   }
 };
-module.exports = validateSignup;
+
+const validateEditProfile = (req) => {
+  const isEditAllowed = [
+    "firstName",
+    "lastName",
+    "age",
+    "gender",
+    "photoUrl",
+    "about",
+    "skills",
+  ];
+
+  return Object.keys(req.body).every((field) => isEditAllowed.includes(field));
+};
+module.exports = { validateSignup, validateEditProfile };

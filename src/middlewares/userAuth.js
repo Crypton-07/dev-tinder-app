@@ -7,17 +7,7 @@ const userAuth = async (req, res, next) => {
     if (!userFromToken) {
       throw new Error("Invalid token");
     }
-    const getUser = await User.findById(userFromToken.id, {
-      email,
-      about,
-      age,
-      skills,
-      firstName,
-      lastName,
-      gender,
-      photoUrl,
-      createdAt,
-    });
+    const getUser = await User.findById(userFromToken.id);
     if (!getUser) {
       throw new Error("User not found");
     }

@@ -36,6 +36,9 @@ const userSchema = new Schema(
   },
   { timestamps: true }
 );
+
+userSchema.index({ firstName: 1, lastName: 1 });
+
 userSchema.methods.getJwtToken = async function () {
   const user = this;
   const token = await jwt.sign({ id: user._id }, "DevTinder@1107", {

@@ -1,77 +1,59 @@
 const express = require("express");
 const User = require("../models/userSchema.js");
+const { userAuth } = require("../middlewares/userAuth.js");
+const connectionRequestModel = require("../models/connectionRequestSchema.js");
+const { ALLOWED_STATUS, POPULATE_DATA } = require("../utils/constants.js");
 const userRouter = express.Router();
 
-userRouter.get("/user", async (req, res) => {
-  const user = await User.find({ email: req.body.email });
+userRouter.get("/users", userAuth, async (req, res) => {
   try {
-    if (user) {
-      res.status(200).send(user);
-    } else {
-      res.status(404).send("User not found");
-    }
-  } catch (err) {
-    res.status(500).send("Internal server error");
-  }
-});
-
-userRouter.delete("/user", async (req, res) => {
-  const { userId } = req.body;
-  try {
-    if (userId) {
-      await User.findByIdAndDelete(userId);
-      res.status(200).send("User deleted successfully");
-    }
+    const allUsers = await User.find();
+    res.json({ data: allUsers });
   } catch (error) {
-    res.status(500).send("Internal server error");
+    res.status(500).json({ message: error.message });
   }
 });
 
-userRouter.patch("/user", async (req, res) => {
-  const data = req.body;
-  const ALLOWED_UPDATES = [
-    "firstName",
-    "lastName",
-    "age",
-    "skills",
-    "about",
-    "photoUrl",
-    "gender",
-  ];
+userRouter.get("/user/requests/recieved", userAuth, async (req, res) => {
   try {
-    const isAllowedUpdates = Object.keys(data).every((k) =>
-      ALLOWED_UPDATES.includes(k)
-    );
-    const fieldIsNotAllowed = Object.keys(data).filter(
-      (k) => !ALLOWED_UPDATES.includes(k)
-    );
-    if (!isAllowedUpdates) {
-      throw new Error(
-        `Field ${fieldIsNotAllowed} is not allowed to update in user data`
-      );
-    }
-    await User.findOneAndUpdate({ email: data.email }, data, {
-      runValidators: true,
+    const loggedInUser = req.user._id;
+    const allConnectionRequests = await connectionRequestModel
+      .find({
+        toUserId: loggedInUser,
+        status: ALLOWED_STATUS.INTERESTED,
+      })
+      .populate("fromUserId", POPULATE_DATA.split(" ").slice(0, 2));
+    res.status(200).json({
+      message: "Connection requests fetched successfully",
+      data: allConnectionRequests,
     });
-    res.status(200).send("User data updated successfully");
   } catch (error) {
-    res.status(500).send(error.message);
+    res.status(500).json({ message: error.message });
   }
 });
 
-userRouter.get("/feed", async (req, res) => {
-  const allUsers = await User.find();
+userRouter.get("/user/connections", userAuth, async (req, res) => {
   try {
-    if (allUsers.length) {
-      res.status(200).send(allUsers);
-    } else {
-      res.status(404).send("No users found");
-    }
-  } catch (error) {
-    console.log(error);
+    const loggedInUser = req.user._id;
+    const connectionRequest = await connectionRequestModel
+      .find({
+        $or: [
+          { toUserId: loggedInUser, status: ALLOWED_STATUS.ACCEPTED },
+          { fromUserId: loggedInUser, status: ALLOWED_STATUS.ACCEPTED },
+        ],
+      })
+      .populate("fromUserId", POPULATE_DATA)
+      .populate("toUserId", POPULATE_DATA);
 
-    res.status(500).send("Internal server error");
+    const data = connectionRequest.map((userData) => {
+      if (loggedInUser.equals(userData.fromUserId._id)) {
+        return userData.toUserId;
+      }
+      return userData.fromUserId;
+    });
+    res.json({ data });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
-
 module.exports = userRouter;

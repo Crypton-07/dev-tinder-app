@@ -3,6 +3,7 @@ const User = require("../models/userSchema.js");
 const { userAuth } = require("../middlewares/userAuth.js");
 const connectionRequestModel = require("../models/connectionRequestSchema.js");
 const { ALLOWED_STATUS, POPULATE_DATA } = require("../utils/constants.js");
+const { set } = require("mongoose");
 const userRouter = express.Router();
 
 userRouter.get("/users", userAuth, async (req, res) => {
@@ -54,6 +55,38 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
     res.json({ data });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+userRouter.get("/feed", userAuth, async (req, res) => {
+  try {
+    const loggedInUser = req.user;
+    const page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+    limit = limit > 20 ? 20 : limit;
+    const skip = (page - 1) * limit;
+    const hideProfileFromFeed = new Set();
+    const allConnectionRequests = await connectionRequestModel
+      .find({
+        $or: [{ fromUserId: loggedInUser }, { toUserId: loggedInUser }],
+      })
+      .select("fromUserId toUserId");
+    allConnectionRequests.forEach((user) => {
+      hideProfileFromFeed.add(user.fromUserId.toString());
+      hideProfileFromFeed.add(user.toUserId.toString());
+    });
+    const showUserInFeed = await User.find({
+      $and: [
+        { _id: { $nin: Array.from(hideProfileFromFeed) } },
+        { _id: { $ne: loggedInUser._id } },
+      ],
+    })
+      .select(POPULATE_DATA)
+      .skip(skip)
+      .limit(limit);
+    res.status(200).json({ data: showUserInFeed });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 module.exports = userRouter;

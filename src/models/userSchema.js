@@ -56,5 +56,11 @@ userSchema.methods.validatePassword = async function (userInputPassword) {
   return isValidPassword;
 };
 
+userSchema.methods.covertToJSON = function () {
+  const userObject = this.toObject();
+  delete userObject.password;
+  return userObject;
+};
+
 const User = mongoose.model("User", userSchema);
 module.exports = User;

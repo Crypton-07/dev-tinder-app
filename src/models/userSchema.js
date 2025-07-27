@@ -56,7 +56,7 @@ userSchema.methods.validatePassword = async function (userInputPassword) {
   return isValidPassword;
 };
 
-userSchema.methods.covertToJSON = function () {
+userSchema.methods.removePassword = function () {
   const userObject = this.toObject();
   delete userObject.password;
   return userObject;

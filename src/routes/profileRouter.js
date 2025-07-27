@@ -6,8 +6,8 @@ const bcrypt = require("bcrypt");
 
 profileRouter.get("/profile/view", userAuth, async (req, res) => {
   try {
-    const userData = req.user.toObject();
-    res.status(200).json({ userData });
+    const userData = req.user.removePassword();
+    res.status(200).json({ data: userData });
   } catch (error) {
     res.status(500).send(error.message);
   }

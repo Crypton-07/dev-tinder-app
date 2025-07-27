@@ -8,7 +8,7 @@ const userRouter = express.Router();
 
 userRouter.get("/users", userAuth, async (req, res) => {
   try {
-    const allUsers = await User.find();
+    const allUsers = await User.find({}, { password: false });
     res.json({ data: allUsers });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -23,7 +23,10 @@ userRouter.get("/user/requests/recieved", userAuth, async (req, res) => {
         toUserId: loggedInUser,
         status: ALLOWED_STATUS.INTERESTED,
       })
-      .populate("fromUserId", POPULATE_DATA.split(" ").slice(0, 2));
+      .populate(
+        "fromUserId",
+        POPULATE_DATA.split(" ").slice(0, POPULATE_DATA.length)
+      );
     res.status(200).json({
       message: "Connection requests fetched successfully",
       data: allConnectionRequests,

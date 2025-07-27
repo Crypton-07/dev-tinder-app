@@ -37,8 +37,11 @@ authRouter.post("/signup", async (req, res) => {
       gender,
       photoUrl,
     });
-    await userData.save();
-    res.status(201).send("User data saved successfully");
+    const savedUser = await userData.save();
+    const token = await savedUser.getJwtToken();
+    res.cookie("token", token);
+    const userInfo = await savedUser.removePassword();
+    res.json({ message: "User created successfully", data: userInfo });
   } catch (error) {
     res.status(400).send("ERROR : " + error.message);
   }
@@ -52,19 +55,19 @@ authRouter.post("/login", async (req, res) => {
     }
     const user = await User.findOne({ email });
     if (!user) {
-      throw new Error("User not found");
+      return res.status(400).json("Invalid credentials");
     }
     const isPasswordMatched = await user.validatePassword(password);
     if (isPasswordMatched) {
       const token = await user.getJwtToken();
       res.cookie("token", token);
-      const userInfo = user.covertToJSON();
-      res.status(200).json({ data: userInfo });
+      const userInfo = user.removePassword();
+      return res.status(200).json(userInfo);
     } else {
-      res.status(400).json("Invalid credentials");
+      return res.status(400).json("Invalid credentials");
     }
   } catch (error) {
-    res.status(500).send(error.message);
+    res.status(500).send({ error });
   }
 });
 

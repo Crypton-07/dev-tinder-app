@@ -18,6 +18,11 @@ app.use("/api", userRouter);
 app.use("/api", profileRouter);
 app.use("/api", requestRouter);
 
+// Test route to verify proxy and routing
+app.get("/api/test", (req, res) => {
+  res.send("API proxy working!");
+});
+
 connectDB()
   .then(() => {
     console.log("Database connected");

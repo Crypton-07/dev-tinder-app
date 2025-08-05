@@ -4,7 +4,7 @@ const cors = require("cors");
 const connectDB = require("./config/database.js");
 const cookieParser = require("cookie-parser");
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: "http://13.203.212.7", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -13,10 +13,10 @@ const userRouter = require("./routes/userRouter");
 const profileRouter = require("./routes/profileRouter");
 const requestRouter = require("./routes/requestRouter");
 
-app.use("/", authRouter);
-app.use("/", userRouter);
-app.use("/", profileRouter);
-app.use("/", requestRouter);
+app.use("/api", authRouter);
+app.use("/api", userRouter);
+app.use("/api", profileRouter);
+app.use("/api", requestRouter);
 
 connectDB()
   .then(() => {

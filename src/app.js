@@ -13,10 +13,10 @@ const userRouter = require("./routes/userRouter");
 const profileRouter = require("./routes/profileRouter");
 const requestRouter = require("./routes/requestRouter");
 
-app.use("/api", authRouter);
-app.use("/api", userRouter);
-app.use("/api", profileRouter);
-app.use("/api", requestRouter);
+app.use("/", authRouter);
+app.use("/", userRouter);
+app.use("/", profileRouter);
+app.use("/", requestRouter);
 
 connectDB()
   .then(() => {
